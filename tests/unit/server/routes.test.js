@@ -12,7 +12,7 @@ const {
     constants: { CONTENT_TYPE },
 } = config;
 
-describe("#Routes - test site for api response", () => {
+describe("#Routes - test suite for api response", () => {
     beforeEach(() => {
         jest.restoreAllMocks();
         jest.clearAllMocks();
@@ -50,18 +50,6 @@ describe("#Routes - test site for api response", () => {
     });
 
     test(`GET /controller - should response with ${pages.controllerHTML} file stream`, async() => {
-        const params = TestUtil.defaultHandleParams();
-        params.request.method = "GET";
-        params.request.url = "/";
-
-        await handler(...params.values());
-        expect(params.response.writeHead).toBeCalledWith(302, {
-            Location: location.home,
-        });
-        expect(params.response.end).toHaveBeenCalled();
-    });
-
-    test(`GET /home - should response with ${pages.homeHTML} file stream`, async() => {
         const params = TestUtil.defaultHandleParams();
         params.request.method = "GET";
         params.request.url = "/controller";
@@ -140,6 +128,57 @@ describe("#Routes - test site for api response", () => {
 
         expect(params.response.writeHead).toHaveBeenCalledWith(404);
         expect(params.response.end).toHaveBeenCalled();
+    });
+
+    test("GET /stream?id=123 - should call createClientStream", async() => {
+        const params = TestUtil.defaultHandleParams();
+        params.request.method = "GET";
+        params.request.url = "/stream?id=123";
+
+        const stream = TestUtil.generateReadableStream(["audio data"]);
+
+        jest.spyOn(stream, "pipe").mockReturnValue();
+
+        const onClose = jest.fn();
+
+        jest
+            .spyOn(Controller.prototype, Controller.prototype.createClientStream.name)
+            .mockReturnValue({ stream, onClose });
+
+        await handler(...params.values());
+        params.request.emit("close");
+
+        expect(params.response.writeHead).toHaveBeenCalledWith(200, {
+            "Content-Type": "audio/mpeg",
+            "Accept-Ranges": "bytes",
+        });
+
+        expect(Controller.prototype.createClientStream).toHaveBeenCalled();
+        expect(stream.pipe).toHaveBeenCalledWith(params.response);
+        expect(onClose).toHaveBeenCalled();
+    });
+
+    test(`POST /controller - should call handleCommand`, async() => {
+        const params = TestUtil.defaultHandleParams();
+        params.request.method = "POST";
+        params.request.url = "/controller";
+        const bodyData = {
+            command: "start",
+        };
+        params.request.push(JSON.stringify(bodyData));
+
+        const jsonResponse = { result: "ok" };
+
+        jest
+            .spyOn(Controller.prototype, Controller.prototype.handleCommand.name)
+            .mockResolvedValue(jsonResponse);
+
+        await handler(...params.values());
+
+        expect(Controller.prototype.handleCommand).toHaveBeenCalledWith(bodyData);
+        expect(params.response.end).toHaveBeenCalledWith(
+            JSON.stringify(jsonResponse)
+        );
     });
 
     describe("exceptions", () => {

@@ -1,0 +1,52 @@
+version: '2.1'
+services:
+  live-reload:
+    image: audio-radio-stream
+    build: .
+    environment:
+      PORT: 3000
+    command:
+      - npm
+      - run
+      - live-reload
+    volumes:
+      - .:/audio-radio-stream
+      - node_modules:/audio-radio-stream/node_modules
+    ports:
+      - 3000:3000
+
+  test:
+    image: audio-radio-stream
+    build: .
+    command:
+      - npm
+      - run
+      - test
+    volumes:
+      - .:/audio-radio-stream
+      - node_modules:/audio-radio-stream/node_modules
+
+  test-watch:
+    image: audio-radio-stream
+    build: .
+    command:
+      - npm
+      - run
+      - test:watch
+    volumes:
+      - .:/audio-radio-stream
+      - node_modules:/audio-radio-stream/node_modules
+
+  test-coverage:
+    image: audio-radio-stream
+    build: .
+    command:
+      - npm
+      - run
+      - test:coverage
+    volumes:
+      - .:/audio-radio-stream
+      - node_modules:/audio-radio-stream/node_modules
+
+volumes:
+  node_modules: {}

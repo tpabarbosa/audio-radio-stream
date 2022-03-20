@@ -4,4 +4,4 @@ import config from "./config.js";
 
 server
     .listen(config.port)
-    .on("listening", () => logger.info(`listening on port ${config.port}`));
+    .on("listening", () => logger.info(`listening on port: ${config.port}`));
