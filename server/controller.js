@@ -22,6 +22,11 @@ export class Controller {
             this.service.stopStreamming();
             return { result: "Streamming stopped" };
         }
+
+        const chosenFx = await this.service.readFxByName(cmd);
+        logger.info(`Added sound effect to service: ${chosenFx}`);
+        console.log(chosenFx);
+        this.service.appendFxStream(chosenFx);
         return { result: "" };
     }
 

@@ -1,7 +1,7 @@
 import fs from "fs";
 import fsPromises from "fs/promises";
 import config from "./config.js";
-import { join, extname } from "path";
+import path, { join, extname } from "path";
 import { randomUUID } from "crypto";
 import { PassThrough, Writable } from "stream";
 import Throttle from "throttle";
@@ -11,8 +11,15 @@ import { once } from "events";
 import streamsPromises from "stream/promises";
 
 const {
-    dir: { publicDirectory },
-    constants: { fallbackBitRate, englishConversation, bitRateDivisor },
+    dir: { publicDirectory, fxDirectory },
+    constants: {
+        fallbackBitRate,
+        englishConversation,
+        bitRateDivisor,
+        audioMediaType,
+        songVolume,
+        fxVolume,
+    },
 } = config;
 
 export class Service {
@@ -113,5 +120,72 @@ export class Service {
             stream: this.createFileStream(name),
             type,
         };
+    }
+
+    async readFxByName(fxName) {
+        const songs = await fsPromises.readdir(fxDirectory);
+
+        const chosenSong = songs.find((filename) =>
+            filename.toLowerCase().includes(fxName)
+        );
+
+        if (!chosenSong)
+            return Promise.reject(`The sounf effect ${fxName} was not found!`);
+
+        return path.join(fxDirectory, chosenSong);
+    }
+
+    appendFxStream(fx) {
+        const throttleTransformable = new Throttle(this.currentBitRate);
+        streamsPromises.pipeline(throttleTransformable, this.broadCast());
+
+        const unpipe = () => {
+            const transformStream = this.megeAudioStreams(fx, this.currentReadable);
+            this.throttleTransform = throttleTransformable;
+            this.currentReadable = transformStream;
+            this.currentReadable.removeListener("unpipe", unpipe);
+
+            streamsPromises.pipeline(transformStream, throttleTransformable);
+        };
+        this.throttleTransform.on("unpipe", unpipe);
+        this.throttleTransform.pause();
+        this.currentReadable.unpipe(this.throttleTransform);
+    }
+
+    megeAudioStreams(fx, readable) {
+        const transformStream = PassThrough();
+        const args = [
+            "-t",
+            audioMediaType,
+            "-v",
+            songVolume,
+            // -m => merge -> o - é para receber como stream
+            "-m",
+            "-",
+            "-t",
+            audioMediaType,
+            "-v",
+            fxVolume,
+            fx,
+            "-t",
+            audioMediaType,
+            "-",
+        ];
+
+        const { stdout, stdin } = this._executeSoxCommand(args);
+
+        streamsPromises
+            .pipeline(readable, stdin)
+            .catch((error) =>
+                logger.error(`Error on sending stream to sox \n${error}`)
+            );
+
+        streamsPromises
+            .pipeline(stdout, transformStream)
+            .catch((error) =>
+                logger.error(`Error on receiving stream from sox \n${error}`)
+            );
+
+        return transformStream;
     }
 }
