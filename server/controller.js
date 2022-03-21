@@ -24,9 +24,12 @@ export class Controller {
         }
 
         const chosenFx = await this.service.readFxByName(cmd);
-        logger.info(`Added sound effect to service: ${chosenFx}`);
-        console.log(chosenFx);
-        this.service.appendFxStream(chosenFx);
+        if (chosenFx) {
+            logger.info(`Added sound effect to service: ${chosenFx}`);
+            this.service.appendFxStream(chosenFx);
+            return { result: `Sound effect: ${chosenFx}` };
+        }
+
         return { result: "" };
     }
 

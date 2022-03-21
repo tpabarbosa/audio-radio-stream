@@ -51,17 +51,36 @@ describe("#Controller - test suite for controller calls", () => {
             expect(result).toStrictEqual({ result: "Streamming stopped" });
         });
 
-        test("given any other command it should not call startStreamming nor stopStreamming", async() => {
+        test("given a valid sound effect command it should call appendFxStream", async() => {
+            const file = "validFx.mp3";
+            const command = { command: "validFx" };
+            jest
+                .spyOn(Service.prototype, Service.prototype.readFxByName.name)
+                .mockResolvedValue(file);
+            jest
+                .spyOn(Service.prototype, Service.prototype.appendFxStream.name)
+                .mockReturnValue();
+
+            const result = await controller.handleCommand(command);
+
+            expect(Service.prototype.readFxByName).toHaveBeenCalledWith("validfx");
+            expect(Service.prototype.appendFxStream).toHaveBeenCalledWith(file);
+            expect(result).toStrictEqual({ result: `Sound effect: ${file}` });
+        });
+
+        test("given an invalid command it should not call appendFxStream", async() => {
             const command = { command: "other" };
             jest
-                .spyOn(Service.prototype, Service.prototype.stopStreamming.name)
+                .spyOn(Service.prototype, Service.prototype.readFxByName.name)
                 .mockReturnValue();
             jest
-                .spyOn(Service.prototype, Service.prototype.startStreamming.name)
+                .spyOn(Service.prototype, Service.prototype.appendFxStream.name)
                 .mockReturnValue();
+
             const result = await controller.handleCommand(command);
-            expect(Service.prototype.startStreamming).not.toHaveBeenCalled();
-            expect(Service.prototype.stopStreamming).not.toHaveBeenCalled();
+
+            expect(Service.prototype.readFxByName).toHaveBeenCalledWith("other");
+            expect(Service.prototype.appendFxStream).not.toHaveBeenCalled();
             expect(result).toStrictEqual({ result: "" });
         });
     });

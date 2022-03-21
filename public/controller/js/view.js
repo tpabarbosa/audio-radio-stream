@@ -7,7 +7,7 @@ export default class View {
         this.ignoreButtons = new Set(["unassigned"]);
         async function onBtnClick() {}
         this.onBtnClick = onBtnClick;
-        this.DISABLE_BTN_TIMEOUT = 200;
+        this.DISABLE_BTN_TIMEOUT = 500;
     }
 
     onLoad() {

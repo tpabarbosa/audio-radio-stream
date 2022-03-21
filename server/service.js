@@ -130,7 +130,7 @@ export class Service {
         );
 
         if (!chosenSong)
-            return Promise.reject(`The sounf effect ${fxName} was not found!`);
+            return Promise.reject(`The sound effect '${fxName}' was not found!`);
 
         return path.join(fxDirectory, chosenSong);
     }
@@ -140,7 +140,7 @@ export class Service {
         streamsPromises.pipeline(throttleTransformable, this.broadCast());
 
         const unpipe = () => {
-            const transformStream = this.megeAudioStreams(fx, this.currentReadable);
+            const transformStream = this.mergeAudioStreams(fx, this.currentReadable);
             this.throttleTransform = throttleTransformable;
             this.currentReadable = transformStream;
             this.currentReadable.removeListener("unpipe", unpipe);
@@ -152,7 +152,7 @@ export class Service {
         this.currentReadable.unpipe(this.throttleTransform);
     }
 
-    megeAudioStreams(fx, readable) {
+    mergeAudioStreams(fx, readable) {
         const transformStream = PassThrough();
         const args = [
             "-t",
